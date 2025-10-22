@@ -37,7 +37,7 @@ Seuraa CLI:n ohjeita. Valitse "framework"-tila ja varmista, että `react-router.
 
   2. Luo ympäristömuuttujille tiedosto projektin juureen nimellä `.env`. Täytä sinne oman Supabase-projektisi URL (`VITE_SUPABASE_URL`) ja anonyymi julkinen avain (`VITE_SUPABASE_ANON_KEY`). 
 
-::: danger
+::: warning
 
 Lisää `.env` myös `.gitignore` tiedostoon, mikäli se ei siellä ole jo valmiiksi. Älä koskaan anna `.env` tiedoston päätyä versionhallintaan. 
 
