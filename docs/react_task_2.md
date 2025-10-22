@@ -30,7 +30,18 @@ Seuraa CLI:n ohjeita. Valitse "framework"-tila ja varmista, että `react-router.
    ```
 
 
-3. **Konfiguroi Supabase.** Kopioi `.env.example` tiedosto projektin juureen nimellä `.env`. Täytä sinne oman Supabase-projektisi URL (`VITE_SUPABASE_URL`) ja anonyymi avain (`VITE_SUPABASE_ANON_KEY`). 
+3. **Konfiguroi Supabase.** 
+
+  1. Kirjaudu https://supabase.com/ palveluun ja luo siellä vastaava taulu: ![alt text](image.png)
+    - _Tässä vaiheessa pidä vielä RLS-suojaus pois käytöstä kyseiseltä taululta._
+
+  2. Luo ympäristömuuttujille tiedosto projektin juureen nimellä `.env`. Täytä sinne oman Supabase-projektisi URL (`VITE_SUPABASE_URL`) ja anonyymi julkinen avain (`VITE_SUPABASE_ANON_KEY`). 
+
+::: danger
+
+Lisää `.env` myös `.gitignore` tiedostoon, mikäli se ei siellä ole jo valmiiksi. Älä koskaan anna `.env` tiedoston päätyä versionhallintaan. 
+
+:::
 
 ## 2. Kansiorakenne (5 p)
 
@@ -73,7 +84,7 @@ export default supabase;
 
 2. **Luo `app/routes/chat.tsx`**, joka toimii sekä datalähteenä että UI-komponenttina:
 
-   ```tsx
+```tsx
    import { useEffect, useRef, useState } from 'react';
    import { useLoaderData } from 'react-router';
    import type { Route } from './+types/chat';
@@ -187,7 +198,7 @@ export default supabase;
        </main>
      );
    }
-    ```
+```
 
 Chat-moduuli esittelee `loader`-funktion, joka suoritetaan palvelimella ja pääkomponentin, joka renderöi UI:n ja hoitaa reaaliaikaiset tilaukset Supabaseen. Reaaliaikainen kuuntelu käyttää `postgres_changes`-tapahtumaa.
 
@@ -196,7 +207,7 @@ Chat-moduuli esittelee `loader`-funktion, joka suoritetaan palvelimella ja pää
 * Lisää `Welcome`-komponenttiin linkki `/chat`, jotta käyttäjät pääsevät chattiin. Voit käyttää `<Link to="/chat">Chat</Link>`-elementtiä React Routerin `react-router`-kirjastosta.
 * Vaihtoehtoisesti lisää linkki suoraan `app/root.tsx`-layoutiin, jos haluat pysyvän navigaatiopalkin.
 
-## 6. Viestien lähetys ja reaaliaikaisuus (15 p)
+## 6. Viestien lähetys ja reaaliaikaisuus **(15 p)**
 
 * **Hae viestit loaderissa.** Olet jo toteuttanut `loader`-funktion, joka hakee viestit Supabasesta.
 * **Lähetä viesti.** `addMessage` kutsuu `supabase.from('messages').insert(...)` ja päivittää tilan.
@@ -205,7 +216,7 @@ Chat-moduuli esittelee `loader`-funktion, joka suoritetaan palvelimella ja pää
 ## 7. Automaattinen scrollaus ja ulkoasu (5 p)
 
 * Scrollaa viestilista aina alareunaan, kun uusi viesti tulee, käyttämällä `useEffect` ja `ref`-elementtiä (kuten koodissa).
-* Hyödynnä DaisyUI:n `chat-start` ja `chat-end` -luokkia viestien sijoittelussa oikealle/vasemmalle.
+* Hyödynnä esim. DaisyUI:n `chat-start` ja `chat-end` -luokkia viestien sijoittelussa oikealle/vasemmalle.
 
 ## 8. Käyttäjän tunnistaminen ja aikaleimat (5 p)
 
@@ -214,21 +225,23 @@ Chat-moduuli esittelee `loader`-funktion, joka suoritetaan palvelimella ja pää
 
 ## 9. Syöttökentän validointi ja virheenkäsittely (5 p)
 
-* Poista **Send**-painike käytöstä, jos syöttökenttä on tyhjä tai pelkkää tyhjää.
-* Näytä virheilmoitus (esim. alert/toast), jos Supabase palauttaa virheen viestin lisäyksessä tai haussa. Käsittele myös reaaliaikaisen tilauksen mahdolliset virheet.
+* Poista **Send**-painike käytöstä, jos syöttökenttä on tyhjä tai sisältää pelkkiä välilyöntejä.
+* Näytä virheilmoitus (esim. alert/toast), jos Supabase palauttaa virheen viestin lisäyksessä tai haussa. Käsittele myös reaaliaikaisen datan mahdolliset virheet.
 
-## 10. Koodin laatu ja linttaus (5 p)
+## 10. Käyttäjän tunnistaminen ja käyttöoikeuksien hallinta **(15 p)** (Advanced)
 
-* Aja `npm run lint` ja korjaa ESLintin ilmoittamat ongelmat. Alustapohja sisältää ESLintin valmiiksi.
-* Käytä kuvaavia muuttujanimiä ja eriytä toistuva koodi omiksi komponenteiksi, jos se selkeyttää.
-* Varmista, että listaelementeillä on vakaa `key`-prop (esim. viestin id).
+* Perehdy autentikaation ja autorisoinnin menetelmiin (supabase) ja tee tarvittavat muutokset koodiin: Uudet komponentit, reitit, service funktiot ym. sovellukseen niin, että käyttäjä voi tunnistautua sovellukseen. 
+* Kytke RLS-päälle supabasen messages-tauluun ja konfiguroi Policy:t niin, että tunnistautuneet käyttäjät voivat nähdä toistensa viestit mutta tunnistautumaton käyttäjä ei niitä saa haettua. (_tietoturvan kannalta oleellinen toiminto_)
+* Toteuta komponenttien / loaderien / actionin näyttölogiikka hyödyntämällä mm. `conditional rendering` menetelmiä niin, että vain tunnistautuneilla käyttäjillä on mahdollisuus osallistua Chat-keskusteluun (_parantaa käytettävyyttä, ei tietoturvaominaisuus_)
+* Käyttäjä voi kirjautua ulos sovelluksesta, sovelluksen tila päivittyy 
 
-## Bonus: React Routerin jatko (10 p, valinnainen)
+## Bonus (10 p, valinnainen)
 
-React Router 7 tarjoaa paljon ominaisuuksia file route ‑pohjaisen reitityksen lisäksi. Saat lisäpisteitä tutkimalla ja toteuttamalla yhtä tai useampaa seuraavista:
+React Router 7 tarjoaa paljon ominaisuuksia. Saat lisäpisteitä tutkimalla ja toteuttamalla yhtä tai useampaa seuraavista:
+
 
 * **Nested routes** - tee `/chat/settings`-sivu, jota voit käyttää chat-sovelluksen asetuksien säätämisessä, ja sisällytä se `chat.tsx`-moduulin sisäkkäiseksi reitiksi.
-* **Loader ja action** - lisää `action`-funktio chat-reitille, joka lähettää viestin (ns. "mutation") lomakkeella. Lue lisää data loadingista React Routerin dokumentaatiosta.
+* **Loader ja action** - lisää `action`-funktio chat-reitille, joka lähettää viestin (ns. "mutation") lomakkeella (Form-komponentti). Lue lisää data loadingista React Routerin dokumentaatiosta.
 * **Lazy route splitting** - kokeile `flatRoutes()`-funktiota tai `@react-router/fs-routes`-kirjastoa auttamaan reittien automaattista määrittelyä.
 
 ---
