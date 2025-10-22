@@ -1,8 +1,9 @@
 
-# FullStack 1 – Mini Chat -projekti (React Router 7 + SSR)
+# FullStack 1 - Mini Chat -projekti (React Router 7 + SSR)
 
 Tässä tehtävässä rakennetaan reaaliaikainen chat-sovellus Supabasen avulla ja käytetään React Routerin framework-tilaa (versio 7) sekä palvelinpuolen renderöintiä (SSR). Aloituspohja on luotu `npx create-react-router@latest` -komennolla ja käyttää TypeScriptiä. Tehtävät ovat pisteytetty yhteensä **70 pisteen** arvosta, lisäksi extrana **10 bonus­pistettä** [React Routeriin](https://reactrouter.com/start/modes#framework) liittyen.
 
+_Tehtävässä rakennettavaa mini-projektia tullaan hyödyntämään tehtäväsarjassa 3 tekoälyratkaisun kanssa!_
 
 
 
@@ -10,17 +11,13 @@ Tässä tehtävässä rakennetaan reaaliaikainen chat-sovellus Supabasen avulla 
 
 1. **Luo uusi React Router ‑projekti.**
 
-::: info
-
-Sen sijasta että luot uuden projektin, voit hyödyntää luennoilla tehtyjä react-koodipohjia muokkaamalla `package.json` -tiedostoa vastaamaan alempaa, sekä lisäämällä tiedostot mukaan.  
-
-:::
 
 Suorita:
 
 ```sh
 npx create-react-router@latest my-chat-app --typescript
 ```
+_Vaihda my-chat-app vastaamaan haluamaasi nimeä chatille_
 
 Seuraa CLI:n ohjeita. Valitse "framework"-tila ja varmista, että `react-router.config.ts`‑tiedostossa on `ssr: true`. Tämä mahdollistaa palvelinpuolen renderöinnin.
 
@@ -32,11 +29,10 @@ Seuraa CLI:n ohjeita. Valitse "framework"-tila ja varmista, että `react-router.
    npm run dev
    ```
 
-   Sovellus näkyy osoitteessa [http://localhost:5173/](http://localhost:5173/).
 
-3. **Konfiguroi Supabase.** Kopioi `.env.example` tiedosto projektin juureen nimellä `.env`. Täytä sinne oman Supabase-projektisi URL (`VITE_SUPABASE_URL`) ja anonyymi avain (`VITE_SUPABASE_ANON_KEY`). Nämä arvot löytyvät Supabasen hallintapaneelista (Project Settings → API).
+3. **Konfiguroi Supabase.** Kopioi `.env.example` tiedosto projektin juureen nimellä `.env`. Täytä sinne oman Supabase-projektisi URL (`VITE_SUPABASE_URL`) ja anonyymi avain (`VITE_SUPABASE_ANON_KEY`). 
 
-## 2. Tutustu uuteen kansiorakenteeseen (5 p)
+## 2. Kansiorakenne (5 p)
 
 * `app/root.tsx` Toimii entrypointtina / layoutina App.jsx:n sijasta, sis. virheenkäsittelyn. Sisältää mm. `<Meta/>`, `<Links/>`, `<ScrollRestoration/>` ja `<Scripts/>`‑komponentit. Juuri­komponentti renderöi `<Outlet/>` komponentin sisällön, johon reitteihin kytketyt komponentit renderöidään.
 * `app/routes.ts` määrittelee reitit. Jokaisella reitillä on URL-polku ja moduli­tiedosto. Esimerkissä on vain indeksi (`home.tsx`).
@@ -44,10 +40,10 @@ Seuraa CLI:n ohjeita. Valitse "framework"-tila ja varmista, että `react-router.
 * `app/welcome/welcome.tsx` sisältää tervetuloa‑näkymän. Tämä näkymä linkittää ulkoisiin resursseihin mutta ei vielä chat-sovellukseen.
 * `react-router.config.ts` React-routerin konfiguraatiotiedostossa voidaan kytkeä SSR-tila päälle tai pois `ssr: true`.
 
-## 3. Lisää Supabase-asiakas (5 p)
+## 3. Lisää Supabase-client (5 p)
 
 1. Luo kansio `app/services` ja lisää sinne tiedosto `supabase.ts`.
-2. Vie tiedostossa `createClient`-funktion avulla Supabase-asiakas, joka lukee `.env`‑tiedoston arvot. Lisää kommenttiin linkki Supabasen JavaScript‑asiakasdokumentaatioon.
+2. Viedään tiedostosta `createClient`-funktion avulla luotu supabase-client instanssi
 
 ```ts
 // app/services/supabase.ts
@@ -86,7 +82,7 @@ export default supabase;
    // Lataa viestit palvelinpuolella. Lisätietoja loader-funktiosta: https://reactrouter.com/start/framework/data-loading
    export async function loader({}: Route.LoaderArgs) {
      const { data, error } = await supabase
-       .from('message_online')
+       .from('messages')
        .select('*')
        .order('created_at', { ascending: true });
      if (error) {
@@ -106,7 +102,7 @@ export default supabase;
      async function addMessage() {
        if (!content.trim()) return;
        const { data, error } = await supabase
-         .from('message_online')
+         .from('messages')
          .insert([{ username, content }])
          .select();
        if (error || !data) {
@@ -117,13 +113,13 @@ export default supabase;
        setContent('');
      }
 
-     // Tilaa postgres_changes-viestit reaaliaikaisesti
+     // Kuuntele postgres_changes-viestejä reaaliaikaisesti.
      useEffect(() => {
        const channel = supabase
          .channel('chat-room')
          .on(
            'postgres_changes',
-           { event: 'INSERT', schema: 'public', table: 'message_online' },
+           { event: 'INSERT', schema: 'public', table: 'messages' },
            (payload) => {
              // Älä lisää viestiä kahdesti, jos se on käyttäjän oma
              if (payload.new.username !== username) {
@@ -191,9 +187,9 @@ export default supabase;
        </main>
      );
    }
-   ```
+    ```
 
-   Tämä chat-moduuli esittelee `loader`-funktion, joka suoritetaan palvelimella sekä pääkomponentin, joka renderöi UI:n ja hoitaa reaaliaikaiset tilaukset Supabaseen. Reaaliaikainen kuuntelu käyttää `postgres_changes`-tapahtumaa.
+Chat-moduuli esittelee `loader`-funktion, joka suoritetaan palvelimella ja pääkomponentin, joka renderöi UI:n ja hoitaa reaaliaikaiset tilaukset Supabaseen. Reaaliaikainen kuuntelu käyttää `postgres_changes`-tapahtumaa.
 
 ## 5. Lisää navigointi chat-sivulle (5 p)
 
@@ -203,7 +199,7 @@ export default supabase;
 ## 6. Viestien lähetys ja reaaliaikaisuus (15 p)
 
 * **Hae viestit loaderissa.** Olet jo toteuttanut `loader`-funktion, joka hakee viestit Supabasesta.
-* **Lähetä viesti.** `addMessage` kutsuu `supabase.from('message_online').insert(...)` ja päivittää tilan.
+* **Lähetä viesti.** `addMessage` kutsuu `supabase.from('messages').insert(...)` ja päivittää tilan.
 * **Kuuntele reaaliaikaiset lisäykset.** `useEffect`-koukku tilaa `postgres_changes`-tapahtumaan Supabasen Realtime-kanavassa. Muista purkaa tilaus `return`-funktion avulla.
 
 ## 7. Automaattinen scrollaus ja ulkoasu (5 p)
@@ -219,7 +215,7 @@ export default supabase;
 ## 9. Syöttökentän validointi ja virheenkäsittely (5 p)
 
 * Poista **Send**-painike käytöstä, jos syöttökenttä on tyhjä tai pelkkää tyhjää.
-* Näytä virheilmoitus (alert tai toast), jos Supabase palauttaa virheen viestin lisäyksessä tai haussa. Käsittele myös reaaliaikaisen tilauksen mahdolliset virheet.
+* Näytä virheilmoitus (esim. alert/toast), jos Supabase palauttaa virheen viestin lisäyksessä tai haussa. Käsittele myös reaaliaikaisen tilauksen mahdolliset virheet.
 
 ## 10. Koodin laatu ja linttaus (5 p)
 
@@ -231,9 +227,9 @@ export default supabase;
 
 React Router 7 tarjoaa paljon ominaisuuksia file route ‑pohjaisen reitityksen lisäksi. Saat lisäpisteitä tutkimalla ja toteuttamalla yhtä tai useampaa seuraavista:
 
-* **Nested routes** – tee `/chat/settings`-sivu, joka näyttää chat-sovelluksen asetukset, ja sisällytä se `chat.tsx`-moduulin lapsireitiksi.
-* **Loader ja action** – lisää `action`-funktio chat-reitille, joka lähettää viestin (ns. "mutation") lomakkeella. Lue lisää data loadingista React Routerin oppaasta.
-* **Lazy route splitting** – kokeile `flatRoutes()`-funktiota tai `@react-router/fs-routes`-kirjastoa auttamaan reittien automaattista määrittelyä.
+* **Nested routes** - tee `/chat/settings`-sivu, jota voit käyttää chat-sovelluksen asetuksien säätämisessä, ja sisällytä se `chat.tsx`-moduulin sisäkkäiseksi reitiksi.
+* **Loader ja action** - lisää `action`-funktio chat-reitille, joka lähettää viestin (ns. "mutation") lomakkeella. Lue lisää data loadingista React Routerin dokumentaatiosta.
+* **Lazy route splitting** - kokeile `flatRoutes()`-funktiota tai `@react-router/fs-routes`-kirjastoa auttamaan reittien automaattista määrittelyä.
 
 ---
 
@@ -282,7 +278,7 @@ import supabase from "../services/supabase";
 */
 export async function loader({}: Route.LoaderArgs) {
   const { data, error } = await supabase
-    .from("message_online")
+    .from("messages")
     .select("*")
     .order("created_at", { ascending: true });
 
@@ -295,7 +291,7 @@ export async function loader({}: Route.LoaderArgs) {
 
 /*
   Chat-komponentti: käyttää loaderDataa, hallitsee tilaa ja
-  tilausta Supabase Realtimeen. Käyttää DaisyUI-luokkia
+  kuuntelee Supabase realtime-rajapintaa. Käyttää DaisyUI-luokkia
   viestien asetteluun.
 */
 export default function Component({
@@ -309,7 +305,7 @@ export default function Component({
   async function addMessage() {
     if (!content.trim()) return;
     const { data, error } = await supabase
-      .from("message_online")
+      .from("messages")
       .insert([{ username, content }])
       .select();
     if (error || !data) {
@@ -325,7 +321,7 @@ export default function Component({
       .channel("chat-room")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "message_online" },
+        { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
           // Vältä duplikaatit omille viesteille
           if (payload.new.username !== username) {
